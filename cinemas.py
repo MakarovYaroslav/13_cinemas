@@ -24,11 +24,12 @@ def parse_afisha_list(raw_html):
 
 
 def fetch_movie_info(movie_title):
-    r = requests.get(
-        'https://www.kinopoisk.ru/index.php?first=no&what=&kp_query=%s'
-        % movie_title
+    request_parameters = {'kp_query': movie_title}
+    returned_data = requests.get(
+        'https://www.kinopoisk.ru/index.php',
+        params=request_parameters
     )
-    soup = BeautifulSoup(r.content, 'lxml')
+    soup = BeautifulSoup(returned_data.content, 'lxml')
     searched_film = soup.find('div', "element most_wanted")
     rating_div = searched_film.find('div', re.compile('^rating'))
     if rating_div is not None:
@@ -43,12 +44,14 @@ def fetch_movie_info(movie_title):
 
 
 def output_movies_to_console(movies, count_to_output):
-    l = lambda x: x[1]
-    sorted_movies = sorted(movies.items(), key=l, reverse=True)
+    sorted_movies = sorted(movies.items(), key=lambda x: x[1], reverse=True)
     if count_to_output > len(sorted_movies):
         count_to_output = len(sorted_movies)
-    for movie_number in range(count_to_output):
-        print(sorted_movies[movie_number][0])
+    for movie_number, movie in enumerate(sorted_movies):
+        if movie_number < count_to_output:
+            print(movie[0])
+        else:
+            return
 
 
 if __name__ == '__main__':
@@ -57,7 +60,7 @@ if __name__ == '__main__':
     movies = parse_afisha_list(fetch_afisha_page())
     for movie in movies.keys():
         rating = fetch_movie_info(movie)[0]
-        if rating != '':
+        if rating:
             movies_with_rating[movie] = float(rating)
         else:
             movies_with_rating[movie] = 0
